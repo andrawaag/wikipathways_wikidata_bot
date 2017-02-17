@@ -1,11 +1,10 @@
+# Author: Andra Waagmeester
+
 import requests
 import io
 import zipfile
 from contextlib import closing
 from rdflib import Graph
-
-
-**
 
 u = requests.get("http://data.wikipathways.org/current/rdf/wikipathways-20170210-rdf-gpml.zip")
 

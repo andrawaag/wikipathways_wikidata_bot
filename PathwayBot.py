@@ -1,3 +1,5 @@
+# Author: Andra Waagmeester
+
 from wikidataintegrator import wdi_core, wdi_login
 import os
 from SPARQLWrapper import SPARQLWrapper, JSON
@@ -7,7 +9,18 @@ import copy
 import pprint
 import requests
 from rdflib import Graph
+import sys
 
+wikipathways = Graph()
+wikipathways.parse("/tmp/wikipathways.ttl",format="turtle")
+qres = wikipathways.query(
+    """SELECT DISTINCT *
+       WHERE {
+          ?s ?p ?o .
+       }""")
+for row in qres:
+    print("%s knows %s %s" % row)
+sys.exit()
 
 def getWikiPathwaysRDF():
     wpfile= requests.get("http://data.wikipathways.org/current/rdf/wikipathways-20170210-rdf-gpml.zip")
