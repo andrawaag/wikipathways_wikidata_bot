@@ -8,70 +8,146 @@ from time import gmtime, strftime
 import copy
 import pprint
 import requests
+import datetime
 from rdflib import Graph
 import sys
+from SPARQLWrapper import SPARQLWrapper, JSON
+
 
 wikipathways = Graph()
+pwid = "WP197"
+
+## Downloading data from Wikipathways
+#
+# This bot extracts Wikipathways content from its RDF representation. This is available through its SPARQL endpoint or through regularly
+# updated RDF data files available at: http://data.wikipathways.org/current/rdf/
+# The data downloads are preferred over the SPARQL endpoint, since the endpoint is updated infrequently and at times unstable.
+# There are two ways to load the RDF:
+# 1. Loading it directly in memory with the Python rdflib library (i.e. graph.parse("<rdf file>")
+# 2. Loading it in a local sparql endpoint on the server where this python scripts run. Currently, blazegraph is used as prefered
+#    RDF infrastructure: https://www.blazegraph.com/download/
+#####
+
+"""
+# Direct loading into memory
+start = datetime.datetime.now()
+print(str(start))
 wikipathways.parse("/tmp/wikipathways.ttl",format="turtle")
-qres = wikipathways.query(
-    """SELECT DISTINCT *
-       WHERE {
-          ?s ?p ?o .
-       }""")
-for row in qres:
-    print("%s knows %s %s" % row)
-sys.exit()
+end = datetime.datetime.now()
+print(str(end))
+delta = end-start
+print(str(delta))
+"""
 
-def getWikiPathwaysRDF():
-    wpfile= requests.get("http://data.wikipathways.org/current/rdf/wikipathways-20170210-rdf-gpml.zip")
-    gpmlfile = requests.get("http://data.wikipathways.org/current/rdf/wikipathways-20170210-rdf-wp.zip")
-
-
-
-#login_instance = wdi_login.WDLogin("ProteinBoxBot", os.environ['wikidataApi'])
-
-wikipathways_sparql = SPARQLWrapper("http://sparql.wikipathways.org")
-wikidata_sparql = SPARQLWrapper("https://query.wikidata.org/bigdata/namespace/wdq/sparql")
-
+# Initiating variables
 prep = dict()
+
+# Stating SPARQL endpoints
+wikidata_sparql = SPARQLWrapper("https://query.wikidata.org/bigdata/namespace/wdq/sparql")
+wikipathways_sparql = SPARQLWrapper("http://127.0.0.1:9999/blazegraph/namespace/Wikipathways/sparql")
+
+# Defining references
+refStatedIn = wdi_core.WDItemID(value="Q27612411", prop_nr='P248', is_reference=True)
+timeStringNow = strftime("+%Y-%m-%dT00:00:00Z", gmtime())
+refRetrieved = wdi_core.WDTime(timeStringNow, prop_nr='P813', is_reference=True)
+refWikiPathways = wdi_core.WDString(pwid, prop_nr='P2410', is_reference=True)
+wikipathways_reference = [refStatedIn, refRetrieved, refWikiPathways]
+
+def get_PathwayElements(pathway="", datatype="GeneProduct", sparqlend = "" ):
+    query =  """PREFIX wp:      <http://vocabularies.wikipathways.org/wp#>
+           PREFIX rdfs:    <http://www.w3.org/2000/01/rdf-schema#>
+           PREFIX dcterms: <http://purl.org/dc/terms/>
+
+           select distinct ?pathway (str(?label) as ?geneProduct) ?id where {
+            ?metabolite a wp:"""
+    query += datatype
+    query += """  ;
+                    rdfs:label ?label ;"""
+    if datatype == "Metabolite":
+        query += "   wp:bdbPubChem ?id ;"
+    if datatype == "GeneProduct":
+        query += "   wp:bdbEntrezGene ?id ;"
+    query += """
+                    dcterms:isPartOf ?pathway .
+            ?pathway a wp:Pathway ;
+                   dcterms:identifier
+            """
+    query += "\"" + pathway +"\"^^xsd:string .}"
+
+    print(query)
+    #qres = wikipathways.query(query)
+    sparqlend.setQuery(query)
+    sparqlend.setReturnFormat(JSON)
+    results = wikipathways_sparql.query().convert()
+    pprint.pprint(results)
+    ids = []
+    for result in results["results"]["bindings"]:
+        print(result["id"]["value"])
+        ids.append("\"" + result["id"]["value"].replace("http://rdf.ncbi.nlm.nih.gov/pubchem/compound/", "").replace("http://identifiers.org/ncbigene/", "") + "\"")
+    pprint.pprint(ids)
+
+    wd_query = "SELECT * WHERE {VALUES ?id {"
+    wd_query += " ".join(ids)
+    if datatype == "Metabolite":
+        wd_query += "} ?item wdt:P662 ?id . }"
+    if datatype == "GeneProduct":
+        wd_query += "} ?item wdt:P351 ?id . }"
+
+    wikidata_sparql.setQuery(wd_query)
+    wikidata_sparql.setReturnFormat(JSON)
+    results = wikidata_sparql.query().convert()
+    for result in results["results"]["bindings"]:
+        if "P527" not in prep.keys():
+            prep["P527"] = []
+        prep["P527"].append(wdi_core.WDItemID(result["item"]["value"].replace("http://www.wikidata.org/entity/", ""), prop_nr='P527', references=[copy.deepcopy(wikipathways_reference)]))
+    pprint.pprint(results)
+
+
+
+
+get_PathwayElements(pathway="WP197",datatype="Metabolite", sparqlend=wikipathways_sparql)
+get_PathwayElements(pathway="WP197", datatype="GeneProduct", sparqlend=wikipathways_sparql)
+
+
 
 # P703 = found in taxon, Q15978631 = "Homo sapiens"
 prep["P703"] = [wdi_core.WDItemID(value="Q15978631", prop_nr='P703', is_reference=True)]
 
-wikipathways_sparql.setQuery("""
-    PREFIX wp:    <http://vocabularies.wikipathways.org/wp#>
 
+query = """
+    PREFIX wp:    <http://vocabularies.wikipathways.org/wp#>
+    PREFIX dcterms: <http://purl.org/dc/terms/>
 SELECT DISTINCT ?pathway ?pwId ?pwLabel
 WHERE {
-   VALUES ?pwId {"WP197"^^xsd:string}
+   VALUES ?pwId {"""
+query += "\""+pwid+"\"^^xsd:string}"
+query += """
    ?pathway a wp:Pathway ;
             dc:title ?pwLabel ;
             dcterms:identifier ?pwId ;
             wp:organismName "Homo sapiens"^^xsd:string .
-}
-""")
+}"""
+print(query)
+wikipathways_sparql.setQuery(query)
 wikipathways_sparql.setReturnFormat(JSON)
 wikidata_sparql.setReturnFormat(JSON)
 results = wikipathways_sparql.query().convert()
 for result in results["results"]["bindings"]:
     print(result["pwId"]["value"])
-    refStatedIn = wdi_core.WDItemID(value="Q27612411", prop_nr='P248', is_reference=True)
-    timeStringNow = strftime("+%Y-%m-%dT00:00:00Z", gmtime())
-    refRetrieved = wdi_core.WDTime(timeStringNow, prop_nr='P813', is_reference=True)
-    refWikiPathways = wdi_core.WDString(result["pwId"]["value"], prop_nr='P2410', is_reference=True)
-    wikipathways_reference = [refStatedIn, refRetrieved, refWikiPathways]
 
     # P2410 = WikiPathways ID
-    prep["P2410"] = [wdi_core.WDString(result["pwId"]["value"], prop_nr='P2410', references=[copy.deepcopy(wikipathways_reference)])]
+    prep["P2410"] = [wdi_core.WDString(pwid, prop_nr='P2410', references=[copy.deepcopy(wikipathways_reference)])]
 
     # P2888 = exact match
     prep["P2888"] = [wdi_core.WDUrl("http://identifiers.org/wikipathways/"+result["pwId"]["value"], prop_nr='P2888', references=[copy.deepcopy(wikipathways_reference)])]
 
     # P2699 = URL
-    prep["P2699"] = [wdi_core.WDUrl("http://www.wikipathways.org/instance/" + result["pwId"]["value"], prop_nr='P2888',
+    prep["P2699"] = [wdi_core.WDUrl("http://www.wikipathways.org/instance/" + result["pwId"]["value"], prop_nr='P2699',
                                     references=[copy.deepcopy(wikipathways_reference)])]
 
     query = """
+    PREFIX wp:    <http://vocabularies.wikipathways.org/wp#>
+    PREFIX dcterms: <http://purl.org/dc/terms/>
     select *
 
     WHERE {
@@ -102,8 +178,6 @@ for result in results["results"]["bindings"]:
                                            references=[copy.deepcopy(wikipathways_reference)]))
 
     pprint.pprint(prep)
-
-
     data2add = []
     for key in prep.keys():
         for statement in prep[key]:
