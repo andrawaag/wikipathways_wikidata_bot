@@ -15,7 +15,7 @@ from SPARQLWrapper import SPARQLWrapper, JSON
 
 
 wikipathways = Graph()
-pwid = "WP2536"
+pwid = "WP3633"
 
 ## Downloading data from Wikipathways
 #
@@ -47,10 +47,12 @@ wikidata_sparql = SPARQLWrapper("https://query.wikidata.org/bigdata/namespace/wd
 wikipathways_sparql = SPARQLWrapper("http://127.0.0.1:9999/blazegraph/namespace/Wikipathways/sparql")
 
 # Login Wikidata
-logincreds = wdi_login.WDLogin(os.environ('wd_user'), os.environ['wikidataApi'])
+# logincreds = wdi_login.WDLogin(user=os.environ['wd_user'], pwd=os.environ['wikidataApi'])
+logincreds = wdi_login.WDLogin(user=os.environ["wd_user"], pwd=os.environ["pwd"]
+
 
 # Defining references
-refStatedIn = wdi_core.WDItemID(value="Q27612411", prop_nr='P248', is_reference=True)
+refStatedIn = wdi_core.WDItemID(value="Q7999828", prop_nr='P248', is_reference=True)
 timeStringNow = strftime("+%Y-%m-%dT00:00:00Z", gmtime())
 refRetrieved = wdi_core.WDTime(timeStringNow, prop_nr='P813', is_reference=True)
 refWikiPathways = wdi_core.WDString(pwid, prop_nr='P2410', is_reference=True)
@@ -86,7 +88,7 @@ def get_PathwayElements(pathway="", datatype="GeneProduct", sparqlend = "" ):
     ids = []
     for result in results["results"]["bindings"]:
         print(result["id"]["value"])
-        ids.append("\"" + result["id"]["value"].replace("http://rdf.ncbi.nlm.nih.gov/pubchem/compound/", "").replace("http://identifiers.org/ncbigene/", "") + "\"")
+        ids.append("\"" + result["id"]["value"].replace("http://rdf.ncbi.nlm.nih.gov/pubchem/compound/CID", "").replace("http://identifiers.org/ncbigene/", "") + "\"")
     pprint.pprint(ids)
 
     wd_query = "SELECT * WHERE {VALUES ?id {"
@@ -97,6 +99,8 @@ def get_PathwayElements(pathway="", datatype="GeneProduct", sparqlend = "" ):
         wd_query += "} ?item wdt:P351 ?id . }"
 
     wikidata_sparql.setQuery(wd_query)
+    print(wd_query)
+
     wikidata_sparql.setReturnFormat(JSON)
     results = wikidata_sparql.query().convert()
     for result in results["results"]["bindings"]:
@@ -108,13 +112,13 @@ def get_PathwayElements(pathway="", datatype="GeneProduct", sparqlend = "" ):
 
 
 
-get_PathwayElements(pathway="WP197",datatype="Metabolite", sparqlend=wikipathways_sparql)
-get_PathwayElements(pathway="WP197", datatype="GeneProduct", sparqlend=wikipathways_sparql)
+get_PathwayElements(pathway=pwid,datatype="Metabolite", sparqlend=wikipathways_sparql)
+get_PathwayElements(pathway=pwid, datatype="GeneProduct", sparqlend=wikipathways_sparql)
 
 
 
 # P703 = found in taxon, Q15978631 = "Homo sapiens"
-prep["P703"] = [wdi_core.WDItemID(value="Q15978631", prop_nr='P703', is_reference=True)]
+prep["P703"] = [wdi_core.WDItemID(value="Q15978631", prop_nr='P703', references=[copy.deepcopy(wikipathways_reference)])]
 
 
 query = """
@@ -145,7 +149,7 @@ for result in results["results"]["bindings"]:
     prep["P2888"] = [wdi_core.WDUrl("http://identifiers.org/wikipathways/"+result["pwId"]["value"], prop_nr='P2888', references=[copy.deepcopy(wikipathways_reference)])]
 
     # P2699 = URL
-    prep["P2699"] = [wdi_core.WDUrl("http://www.wikipathways.org/instance/" + result["pwId"]["value"], prop_nr='P2699   ',
+    prep["P2699"] = [wdi_core.WDUrl("http://www.wikipathways.org/instance/" + result["pwId"]["value"], prop_nr='P2699',
                                     references=[copy.deepcopy(wikipathways_reference)])]
 
     query = """
