@@ -15,7 +15,7 @@ from SPARQLWrapper import SPARQLWrapper, JSON
 
 
 wikipathways = Graph()
-pwid = "WP197"
+pwid = "WP2536"
 
 ## Downloading data from Wikipathways
 #
@@ -45,6 +45,9 @@ prep = dict()
 # Stating SPARQL endpoints
 wikidata_sparql = SPARQLWrapper("https://query.wikidata.org/bigdata/namespace/wdq/sparql")
 wikipathways_sparql = SPARQLWrapper("http://127.0.0.1:9999/blazegraph/namespace/Wikipathways/sparql")
+
+# Login Wikidata
+logincreds = wdi_login.WDLogin(os.environ('wd_user'), os.environ['wikidataApi'])
 
 # Defining references
 refStatedIn = wdi_core.WDItemID(value="Q27612411", prop_nr='P248', is_reference=True)
@@ -142,7 +145,7 @@ for result in results["results"]["bindings"]:
     prep["P2888"] = [wdi_core.WDUrl("http://identifiers.org/wikipathways/"+result["pwId"]["value"], prop_nr='P2888', references=[copy.deepcopy(wikipathways_reference)])]
 
     # P2699 = URL
-    prep["P2699"] = [wdi_core.WDUrl("http://www.wikipathways.org/instance/" + result["pwId"]["value"], prop_nr='P2699',
+    prep["P2699"] = [wdi_core.WDUrl("http://www.wikipathways.org/instance/" + result["pwId"]["value"], prop_nr='P2699   ',
                                     references=[copy.deepcopy(wikipathways_reference)])]
 
     query = """
@@ -192,6 +195,8 @@ for result in results["results"]["bindings"]:
     wd_json_representation = wdPage.get_wd_json_representation()
 
     pprint.pprint(wd_json_representation)
+    wdPage.write(logincreds)
+    sys.exit()
 
 
 
