@@ -15,7 +15,7 @@ from SPARQLWrapper import SPARQLWrapper, JSON
 
 
 wikipathways = Graph()
-pwid = "WP3633"
+pwid = "WP3298"
 
 ## Downloading data from Wikipathways
 #
@@ -48,7 +48,7 @@ wikipathways_sparql = SPARQLWrapper("http://127.0.0.1:9999/blazegraph/namespace/
 
 # Login Wikidata
 # logincreds = wdi_login.WDLogin(user=os.environ['wd_user'], pwd=os.environ['wikidataApi'])
-logincreds = wdi_login.WDLogin(user=os.environ["wd_user"], pwd=os.environ["pwd"]
+logincreds = wdi_login.WDLogin(user=os.environ["wd_user"], pwd=os.environ["pwd"])
 
 
 # Defining references
@@ -141,6 +141,9 @@ wikidata_sparql.setReturnFormat(JSON)
 results = wikipathways_sparql.query().convert()
 for result in results["results"]["bindings"]:
     print(result["pwId"]["value"])
+
+    # P31 = instance of
+    prep["P31"] = [wdi_core.WDItemID(value="Q28864279",prop_nr="P31", references=[copy.deepcopy(wikipathways_reference)])]
 
     # P2410 = WikiPathways ID
     prep["P2410"] = [wdi_core.WDString(pwid, prop_nr='P2410', references=[copy.deepcopy(wikipathways_reference)])]
