@@ -101,7 +101,7 @@ def get_PathwayElements(pathway="", datatype="GeneProduct", sparqlend = "" ):
 
 
     # TODO: Check for existence of the ids in wikidata
-    wd_query = "SELECT * WHERE {VALUES ?id {"
+    wd_query = "SELECT DISTINCT * WHERE {VALUES ?id {"
     wd_query += " ".join(ids)
     if datatype == "Metabolite":
         wd_query += "} ?item wdt:P662 ?id . }"
