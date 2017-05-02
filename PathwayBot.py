@@ -1,6 +1,6 @@
 # Author: Andra Waagmeester
 
-from wikidataintegrator import wdi_core, wdi_login
+from wikidataintegrator import wdi_core, wdi_login, wdi_property_store
 import os
 from SPARQLWrapper import SPARQLWrapper, JSON
 import pprint
@@ -15,7 +15,15 @@ from SPARQLWrapper import SPARQLWrapper, JSON
 
 
 wikipathways = Graph()
-pwid = "WP3298"
+pwid = "WP1531"
+
+wdi_property_store.wd_properties['P2410'] = {
+        'datatype': 'string',
+        'name': 'Wikipathways ID',
+        'domain': ['pathways'],
+        'core_id': 'True'
+    }
+
 
 ## Downloading data from Wikipathways
 #
@@ -91,6 +99,8 @@ def get_PathwayElements(pathway="", datatype="GeneProduct", sparqlend = "" ):
         ids.append("\"" + result["id"]["value"].replace("http://rdf.ncbi.nlm.nih.gov/pubchem/compound/CID", "").replace("http://identifiers.org/ncbigene/", "") + "\"")
     pprint.pprint(ids)
 
+
+    # TODO: Check for existence of the ids in wikidata
     wd_query = "SELECT * WHERE {VALUES ?id {"
     wd_query += " ".join(ids)
     if datatype == "Metabolite":

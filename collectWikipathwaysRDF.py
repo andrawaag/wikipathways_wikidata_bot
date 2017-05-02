@@ -6,7 +6,7 @@ import zipfile
 from contextlib import closing
 from rdflib import Graph
 
-u = requests.get("http://data.wikipathways.org/current/rdf/wikipathways-20170210-rdf-gpml.zip")
+u = requests.get("http://data.wikipathways.org/current/rdf/wikipathways-20170410-rdf-gpml.zip")
 
 temp = Graph()
 with closing(u), zipfile.ZipFile(io.BytesIO(u.content)) as archive:
@@ -15,7 +15,7 @@ with closing(u), zipfile.ZipFile(io.BytesIO(u.content)) as archive:
         print(nt_content)
         temp.parse(data=nt_content.decode(), format="turtle")
 
-u = requests.get("http://data.wikipathways.org/current/rdf/wikipathways-20170210-rdf-wp.zip")
+u = requests.get("http://data.wikipathways.org/current/rdf/wikipathways-20170410-rdf-wp.zip")
 with closing(u), zipfile.ZipFile(io.BytesIO(u.content)) as archive:
     for member in archive.infolist():
         nt_content = archive.read(member)
