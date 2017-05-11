@@ -15,7 +15,7 @@ from SPARQLWrapper import SPARQLWrapper, JSON
 
 
 wikipathways = Graph()
-pwid = "WP1531"
+pwid = sys.argv[1]
 
 wdi_property_store.wd_properties['P2410'] = {
         'datatype': 'string',
@@ -208,6 +208,7 @@ for result in results["results"]["bindings"]:
                                    domain="genes")
 
     wdPage.set_label(result["pwLabel"]["value"])
+    wdPage.set_description("human biological pathway", lang="en")
 
     wd_json_representation = wdPage.get_wd_json_representation()
 
