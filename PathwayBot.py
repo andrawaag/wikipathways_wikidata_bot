@@ -133,6 +133,7 @@ prep["P703"] = [wdi_core.WDItemID(value="Q15978631", prop_nr='P703', references=
 
 query = """
     PREFIX wp:    <http://vocabularies.wikipathways.org/wp#>
+    PREFIX gpml:    <http://vocabularies.wikipathways.org/gpml#>
     PREFIX dcterms: <http://purl.org/dc/terms/>
 SELECT DISTINCT ?pathway ?pwId ?pwLabel
 WHERE {
@@ -142,6 +143,7 @@ query += """
    ?pathway a wp:Pathway ;
             dc:title ?pwLabel ;
             dcterms:identifier ?pwId ;
+            <http://vocabularies.wikipathways.org/wp#isAbout> ?details ;
             wp:organismName "Homo sapiens"^^xsd:string .
 }"""
 print(query)
@@ -155,15 +157,14 @@ for result in results["results"]["bindings"]:
     # P31 = instance of
     prep["P31"] = [wdi_core.WDItemID(value="Q28864279",prop_nr="P31", references=[copy.deepcopy(wikipathways_reference)])]
 
+    # P577 = Publication date
+    # prep["P577"] = [wdi_core.WDTime(value=wresult["lastModified"]["value"], prop_nr="P577", references=[copy.deepcopy(wikipathways_reference)])]
+
     # P2410 = WikiPathways ID
     prep["P2410"] = [wdi_core.WDString(pwid, prop_nr='P2410', references=[copy.deepcopy(wikipathways_reference)])]
 
     # P2888 = exact match
     prep["P2888"] = [wdi_core.WDUrl("http://identifiers.org/wikipathways/"+result["pwId"]["value"], prop_nr='P2888', references=[copy.deepcopy(wikipathways_reference)])]
-
-    # P2699 = URL
-    prep["P2699"] = [wdi_core.WDUrl("http://www.wikipathways.org/instance/" + result["pwId"]["value"], prop_nr='P2699',
-                                    references=[copy.deepcopy(wikipathways_reference)])]
 
     query = """
     PREFIX wp:    <http://vocabularies.wikipathways.org/wp#>
@@ -214,7 +215,7 @@ for result in results["results"]["bindings"]:
 
     pprint.pprint(wd_json_representation)
     wdPage.write(logincreds)
-    sys.exit()
+
 
 
 
