@@ -155,7 +155,7 @@ for result in results["results"]["bindings"]:
     print(result["pwId"]["value"])
 
     # P31 = instance of
-    prep["P31"] = [wdi_core.WDItemID(value="Q28864279",prop_nr="P31", references=[copy.deepcopy(wikipathways_reference)])]
+    prep["P31"] = [wdi_core.WDItemID(value="Q4915012",prop_nr="P31", references=[copy.deepcopy(wikipathways_reference)])]
 
     # P577 = Publication date
     # prep["P577"] = [wdi_core.WDTime(value=wresult["lastModified"]["value"], prop_nr="P577", references=[copy.deepcopy(wikipathways_reference)])]
